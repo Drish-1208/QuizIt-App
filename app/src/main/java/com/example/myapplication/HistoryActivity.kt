@@ -12,32 +12,25 @@ class HistoryActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: HistoryAdapter
-    private lateinit var db: AppDatabase // Reference to the database
-
+    private lateinit var db: AppDatabase
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_history)
 
-        // Initialize the database instance
         db = AppDatabase.getDatabase(applicationContext)
 
         recyclerView = findViewById(R.id.historyRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Initialize adapter with an empty list. It will be updated shortly.
         adapter = HistoryAdapter(emptyList())
         recyclerView.adapter = adapter
 
-        // Load the history from the database
         loadHistory()
     }
 
     private fun loadHistory() {
-        // Use a coroutine to observe the database for changes
         lifecycleScope.launch {
             db.quizDao().getAllResults().collectLatest { resultsList ->
-                // This block will run every time the data changes.
-                // It automatically runs on the main thread.
                 adapter.updateData(resultsList)
             }
         }

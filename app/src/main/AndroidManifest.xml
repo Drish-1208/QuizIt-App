@@ -16,7 +16,7 @@
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
 
-        <!-- 1. The Main Activity (Launch Screen) -->
+        <!-- 1. the main screen -->
         <activity
             android:exported="true"
             android:name=".LoginActivity">
@@ -26,7 +26,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 2. The Quiz Result Activity (Second Screen) -->
+        <!-- 2. the quiz screen -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -36,11 +36,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- 3. The History Activity (Third Screen) -->
+        <!-- 3. the history page -->
         <activity android:name=".QuizResultActivity" />
-        <!-- 4. The Login Activity (Fourth Screen) -->
+        <!-- 4. The history page -->
         <activity android:name=".HistoryActivity" />
-        <!-- 5. The Register Activity (Fifth Screen) -->
+        <!-- 5. the register page -->
         <activity android:name=".RegisterActivity" />
 
 

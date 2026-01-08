@@ -11,7 +11,6 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-// Import lifecycleScope and coroutines for database operations
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
@@ -28,16 +27,14 @@ class QuizResultActivity : AppCompatActivity() {
     private var currentQuestionIndex = 0
     private val userAnswers = mutableMapOf<Int, Int>()
     private var countDownTimer: CountDownTimer? = null
-
-    // Variable to hold the quiz topic
     private var quizTopic: String = "General"
+    private var isShowingAnswer = false
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quiz_result)
 
-        // Initialize Views
         questionTextView = findViewById(R.id.questionTextView)
         questionProgressText = findViewById(R.id.questionProgressText)
         optionsRadioGroup = findViewById(R.id.optionsRadioGroup)
@@ -47,11 +44,8 @@ class QuizResultActivity : AppCompatActivity() {
 
         val rawQuizData = intent.getStringExtra("QUIZ_DATA")
         val minutes = intent.getLongExtra("TIMER_MINUTES", 0)
-        // Get the topic from the Intent
         quizTopic = intent.getStringExtra("QUIZ_TOPIC") ?: "General Knowledge"
 
-
-        // Timer Logic
         if (minutes > 0) {
             startTimer(minutes)
         } else {
@@ -67,70 +61,100 @@ class QuizResultActivity : AppCompatActivity() {
             }
         }
 
-        // --- BUTTON LISTENERS ---
+        // --- ENTIRE NEXT BUTTON LOGIC IS REPLACED ---
         nextButton.setOnClickListener {
-            saveCurrentAnswer()
-            if (currentQuestionIndex < questions.size - 1) {
+            // If we are currently showing the answer, then move to the next question.
+            if (isShowingAnswer) {
                 currentQuestionIndex++
-                showQuestion(currentQuestionIndex)
+                if (currentQuestionIndex < questions.size - 1) {
+                    showQuestion(currentQuestionIndex)
+                } else {
+                    finishQuizAndShowScore()
+                }
             } else {
-                finishQuizAndShowScore()
+                // If we are NOT showing an answer, then check the selected answer and show it.
+                val selectedId = optionsRadioGroup.checkedRadioButtonId
+                if (selectedId != -1) {
+                    saveCurrentAnswer() // Save the answer first
+                    showCorrectAnswer() // Then show the colors
+                } else {
+                }
             }
         }
 
-        prevButton.setOnClickListener {
-            saveCurrentAnswer()
-            if (currentQuestionIndex > 0) {
-                currentQuestionIndex--
-                showQuestion(currentQuestionIndex)
+        // Previous button is disabled because this new feature makes it confusing.
+        prevButton.isEnabled = false
+    }
+
+    // --- THIS IS A NEW FUNCTION ---
+    private fun showCorrectAnswer() {
+        val correctAnswerId = questions[currentQuestionIndex].correctAnswerIndex
+        val selectedAnswerId = userAnswers[currentQuestionIndex]
+
+        // This checks if the user's answer was correct and updates the score.
+        if (selectedAnswerId == correctAnswerId) {
+            // We can add logic to update score here if we want instant score update
+        }
+
+        // Go through each radio button to color it
+        for (i in 0 until optionsRadioGroup.childCount) {
+            val button = optionsRadioGroup.getChildAt(i) as RadioButton
+            button.isClickable = false // Stop user from changing their answer
+
+            // If this button is the correct answer, color it GREEN
+            if (button.id == correctAnswerId) {
+                button.setBackgroundColor(Color.GREEN)
+                button.setTextColor(Color.WHITE) // Make text easy to read on green background
+            }
+            // If this button was the user's choice AND it was WRONG, color it RED
+            else if (button.id == selectedAnswerId && selectedAnswerId != correctAnswerId) {
+                button.setBackgroundColor(Color.RED)
+                button.setTextColor(Color.WHITE) // Make text easy to read on red background
             }
         }
+
+        isShowingAnswer = true // We are now in "showing answer" mode.
+        // Change the button text to prompt the user to continue.
+        nextButton.text = if (currentQuestionIndex < questions.size - 1) "Continue" else "Finish"
     }
 
     private fun finishQuizAndShowScore() {
         countDownTimer?.cancel()
         var score = 0
         for (i in questions.indices) {
-            if (userAnswers[i] == questions[i].correctAnswerIndex) {
+            // Use .getOrDefault because user might not have answered all questions if timer runs out.
+            if (userAnswers.getOrDefault(i, -1) == questions[i].correctAnswerIndex) {
                 score++
             }
         }
 
-        // --- THIS IS THE NEW CODE TO SAVE TO THE DATABASE ---
         val scoreText = "$score/${questions.size}"
+
+        // This part saves the result for the History page. We will keep it simple.
         val resultEntity = QuizResultEntity(
             topic = quizTopic,
             score = scoreText,
             timestamp = System.currentTimeMillis()
         )
 
-        // Use a coroutine to insert data in the background
         lifecycleScope.launch {
+            // You will need to replace AppDatabase and quizDao with your actual DB classes.
             val db = AppDatabase.getDatabase(applicationContext)
             db.quizDao().insertQuizResult(resultEntity)
         }
-        // --- END OF NEW CODE ---
 
-
-        // Show Result Dialog
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Quiz Completed!")
-        // Update the message to confirm saving
         builder.setMessage("You scored $scoreText.\nResult saved to history!")
         builder.setPositiveButton("Return to Home") { _, _ ->
-            // Use an Intent to go to MainActivity cleanly
             val intent = Intent(this, MainActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
-            finish() // Close this activity
+            finish()
         }
         builder.setCancelable(false)
         builder.show()
     }
-
-    // (The rest of your file: onDestroy, showQuestion, saveCurrentAnswer, parseQuizData, etc. remains the same)
-    // Make sure to copy the rest of your functions below this line if you are copy-pasting selectively.
-    // For simplicity, just replace the whole file content.
 
     override fun onDestroy() {
         super.onDestroy()
@@ -156,6 +180,10 @@ class QuizResultActivity : AppCompatActivity() {
     }
 
     private fun showQuestion(index: Int) {
+        // --- ADDITIONS TO THIS FUNCTION ---
+        isShowingAnswer = false // Reset the state for the new question.
+        prevButton.isEnabled = false // Keep the previous button disabled.
+
         val q = questions[index]
         questionTextView.text = "Q${index + 1}: ${q.text}"
         questionProgressText.text = "Question ${index + 1} of ${questions.size}"
@@ -166,15 +194,18 @@ class QuizResultActivity : AppCompatActivity() {
             val rb = RadioButton(this)
             rb.text = option
             rb.id = i
+            rb.setTextColor(Color.BLACK) // Reset text color
+            rb.setBackgroundColor(Color.TRANSPARENT) // Reset background color
+            rb.isClickable = true // Make sure button is clickable
             optionsRadioGroup.addView(rb)
         }
 
+        // This part of your code was good, it re-selects an answer if the user already made one.
         if (userAnswers.containsKey(index)) {
             optionsRadioGroup.check(userAnswers[index]!!)
         }
 
-        prevButton.isEnabled = index > 0
-        nextButton.text = if (index == questions.size - 1) "Finish Quiz" else "Next"
+        nextButton.text = if (index == questions.size - 1) "Finish" else "Next"
     }
 
     private fun saveCurrentAnswer() {
@@ -198,7 +229,7 @@ class QuizResultActivity : AppCompatActivity() {
                 val answerLine = lines.firstOrNull { it.startsWith("Answer:") }
 
                 if (optionLines.size == 4 && answerLine != null) {
-                    val options = optionLines.map { it.trim() }
+                    val options = optionLines.map { it.substringAfter(". ").trim() } // Cleaned up options
                     val answerChar = answerLine.substringAfter(":").trim().firstOrNull()
                     val correctIndex = when (answerChar?.uppercaseChar()) {
                         'A' -> 0; 'B' -> 1; 'C' -> 2; 'D' -> 3; else -> -1
@@ -209,10 +240,9 @@ class QuizResultActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                // Ignore malformed questions
+                // Catching errors to prevent crashes from bad Gemini data.
             }
         }
         return questionsList
     }
-
 }

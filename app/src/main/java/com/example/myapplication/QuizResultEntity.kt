@@ -8,6 +8,6 @@ data class QuizResultEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val topic: String,
-    val score: String, // e.g., "8/10"
+    val score: String,
     val timestamp: Long = System.currentTimeMillis()
 )

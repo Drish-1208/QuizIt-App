@@ -6,7 +6,7 @@
     android:padding="24dp"
     android:gravity="center_horizontal">
 
-    <!-- Timer at the top -->
+    <!-- timer at  top -->
     <TextView
         android:id="@+id/timerTextView"
         android:layout_width="wrap_content"
@@ -17,7 +17,7 @@
         android:textColor="@android:color/holo_blue_dark"
         android:layout_marginBottom="16dp"/>
 
-    <!-- Question Number Indicator -->
+    <!-- question number indicator -->
     <TextView
         android:id="@+id/questionProgressText"
         android:layout_width="wrap_content"

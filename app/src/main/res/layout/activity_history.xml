@@ -14,7 +14,6 @@
         android:layout_marginBottom="16dp"
         android:layout_gravity="center_horizontal"/>
 
-    <!-- This list will hold the history items -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/historyRecyclerView"
         android:layout_width="match_parent"

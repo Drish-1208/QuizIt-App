@@ -9,7 +9,7 @@ plugins {
 
 }
 
-// This code reads the local.properties file
+// this code reads  local.properties file
 val localProperties = Properties()
 val localPropertiesFile = project.rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
@@ -29,7 +29,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // This line creates the API key variable from the properties file
+        // this line creates the api key variable from properties file
         buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY")}\"")
     }
 
@@ -49,7 +49,6 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
-    // <<< ADD THIS buildFeatures BLOCK
     buildFeatures {
         buildConfig = true
     }
@@ -65,7 +64,7 @@ dependencies {
     val room_version = "2.6.1"
 
     implementation("androidx.room:room-runtime:$room_version")
-    implementation("androidx.room:room-ktx:$room_version") // For Kotlin extensions
+    implementation("androidx.room:room-ktx:$room_version")
     kapt("androidx.room:room-compiler:$room_version")
 
     androidTestImplementation(libs.androidx.junit)
@@ -74,9 +73,9 @@ dependencies {
     // Material Components for modern UI elements
     implementation("com.google.android.material:material:1.13.0")
 
-    // Retrofit for making network requests to the Gemini API
+    // Retrofit for making networking requests to the our api
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0") // To handle JSON data
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
     // Google AI client SDK for Android (Gemini)
     implementation("com.google.ai.client.generativeai:generativeai:0.6.0")

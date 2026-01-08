@@ -20,7 +20,7 @@ class LoginActivity : AppCompatActivity() {
         val loginButton = findViewById<Button>(R.id.loginButton)
         val registerTextView = findViewById<TextView>(R.id.registerTextView)
 
-        // --- Login Button Logic ---
+        // --- for login ---
         loginButton.setOnClickListener {
             val email = emailEditText.text.toString()
             val password = passwordEditText.text.toString()
@@ -30,22 +30,19 @@ class LoginActivity : AppCompatActivity() {
             val savedPassword = sharedPreferences.getString("password", null)
 
             if (email == savedEmail && password == savedPassword && savedEmail != null) {
-                // Login is successful, save the session state
-                sharedPreferences.edit().putBoolean("isLoggedIn", true).apply() // <-- NEW LINE
+                sharedPreferences.edit().putBoolean("isLoggedIn", true).apply()
 
                 Toast.makeText(this, "Login Successful!", Toast.LENGTH_SHORT).show()
 
-                // Navigate to the main screen
+                // takes to main scren
                 val intent = Intent(this, MainActivity::class.java)
                 startActivity(intent)
 
-                finish() // Finish LoginActivity
+                finish() // Finish login
             } else {
                 Toast.makeText(this, "Invalid email or password.", Toast.LENGTH_SHORT).show()
             }
         }
-
-        // --- Register Text Click Logic ---
         registerTextView.setOnClickListener {
             val intent = Intent(this, RegisterActivity::class.java)
             startActivity(intent)

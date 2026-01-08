@@ -2,32 +2,58 @@ package com.example.myapplication
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.util.Log
+import android.view.View
 import android.widget.Button
-import android.widget.EditText
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.android.material.textfield.TextInputEditText
 import com.example.myapplication.BuildConfig
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    // These need to be declared here
-    private lateinit var topicEditText: EditText
-    private lateinit var timeEditText: EditText
+    // Variables for all the views in your XML layout
+    private lateinit var topicEditText: TextInputEditText
+    private lateinit var questionsCountEditText: TextInputEditText
+    private lateinit var timerEditText: TextInputEditText
     private lateinit var generateQuizButton: Button
+    private lateinit var selectPdfButton: Button
     private lateinit var viewHistoryButton: Button
     private lateinit var logoutButton: Button
+    private lateinit var selectedPdfTextView: TextView
     private lateinit var progressBar: ProgressBar
+
+    // This code handles the result from the file picker
+    private val pdfPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            // Get the clean file name from the URI
+            val fileName = getFileName(it)
+            // Update the TextView with the file name
+            selectedPdfTextView.text = fileName
+            selectedPdfTextView.visibility = View.VISIBLE
+
+            Toast.makeText(this, "Selected: $fileName", Toast.LENGTH_SHORT).show()
+
+            // Future step: Start the quiz from the PDF
+            // val intent = Intent(this, PdfQuizActivity::class.java)
+            // intent.data = it
+            // startActivity(intent)
+        }
+    }
 
     private val generativeModel by lazy {
         GenerativeModel(
-            modelName = "gemini-1.5-flash",
+            modelName = "gemini-2.5-flash",
             apiKey = BuildConfig.GEMINI_API_KEY
         )
     }
@@ -35,43 +61,50 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // --- SESSION CHECK LOGIC ---
+        // Check if user is logged in
         val sharedPreferences = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
         val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
 
         if (!isLoggedIn) {
-            // If the user is NOT logged in, redirect them IMMEDIATELY.
             val intent = Intent(this, LoginActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
-            return // IMPORTANT: Stop further execution of onCreate
+            return
         }
 
-        // --- If the code reaches here, it means the user IS logged in ---
-
-        // NOW it is safe to set the content view and initialize everything.
         setContentView(R.layout.activity_main)
 
-        // Initialize views
+        // Initialize all the views from your layout file
         topicEditText = findViewById(R.id.topicEditText)
-        timeEditText = findViewById(R.id.timerEditText)
+        questionsCountEditText = findViewById(R.id.questionsCountEditText)
+        timerEditText = findViewById(R.id.timerEditText)
         generateQuizButton = findViewById(R.id.generateQuizButton)
+        selectPdfButton = findViewById(R.id.selectPdfButton)
         viewHistoryButton = findViewById(R.id.viewHistoryButton)
         logoutButton = findViewById(R.id.logoutButton)
+        selectedPdfTextView = findViewById(R.id.selectedPdfTextView)
         progressBar = findViewById(R.id.progressBar)
 
-        // Set up button listeners
+        // Set click listeners for all buttons
         generateQuizButton.setOnClickListener {
             val topic = topicEditText.text.toString().trim()
-            val timeStr = timeEditText.text.toString().trim()
-            val timeInMinutes = timeStr.toLongOrNull() ?: 0
+            val numQuestionsStr = questionsCountEditText.text.toString().trim()
+            val timeStr = timerEditText.text.toString().trim()
+
+            val numQuestions = numQuestionsStr.toIntOrNull() ?: 10 // Default to 10 if empty
+            val timeInMinutes = timeStr.toLongOrNull() ?: 0 // Default to 0 if empty
 
             if (topic.isNotEmpty()) {
-                generateQuiz(topic, timeInMinutes)
+                generateQuiz(topic, numQuestions, timeInMinutes)
             } else {
                 Toast.makeText(this, "Please enter a topic", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        selectPdfButton.setOnClickListener {
+            // This opens the file picker and only shows PDF files
+            pdfPickerLauncher.launch("application/pdf")
         }
 
         viewHistoryButton.setOnClickListener {
@@ -84,25 +117,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // --- ALL THE FUNCTIONS BELOW WERE MISSING ---
-
-    private fun logoutUser() {
-        // 1. Update SharedPreferences to set isLoggedIn to false
-        val sharedPreferences = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
-
-        // 2. Redirect to LoginActivity
-        val intent = Intent(this, LoginActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
-        finish() // Close MainActivity
-    }
-
-    private fun generateQuiz(topic: String, timeInMinutes: Long) {
+    private fun generateQuiz(topic: String, numQuestions: Int, timeInMinutes: Long) {
         setLoading(true)
         lifecycleScope.launch {
             try {
-                val prompt = "Generate a 10-question multiple-choice quiz on the topic of '$topic'. For each question, provide 4 options (A, B, C, D) and clearly state the correct answer on a new line, like 'Answer: A'."
+                // Updated prompt to use the number of questions
+                val prompt = "Generate a $numQuestions-question multiple-choice quiz on '$topic'. For each question, provide 4 options (A, B, C, D) and the correct answer on a new line like 'Answer: A'."
                 val response = generativeModel.generateContent(prompt)
                 val quizText = response.text
 
@@ -124,12 +144,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun logoutUser() {
+        val sharedPreferences = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("isLoggedIn", false).apply()
+
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+    }
+
     private fun setLoading(isLoading: Boolean) {
         progressBar.isVisible = isLoading
         generateQuizButton.isEnabled = !isLoading
+        selectPdfButton.isEnabled = !isLoading
     }
 
     private fun showError(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
+    // Helper function to get a clean file name from a URI
+    private fun getFileName(uri: Uri): String {
+        var name = "Selected File"
+        val cursor = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    name = it.getString(nameIndex)
+                }
+            }
+        }
+        return name
     }
 }
