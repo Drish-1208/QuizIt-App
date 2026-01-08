@@ -1,6 +1,5 @@
 package com.example.myapplication
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -21,7 +20,6 @@ class QuizResultActivity : AppCompatActivity() {
     private lateinit var questionProgressText: TextView
     private lateinit var optionsRadioGroup: RadioGroup
     private lateinit var nextButton: Button
-    private lateinit var prevButton: Button
     private lateinit var timerTextView: TextView
 
     private var questions: List<Question> = emptyList()
@@ -30,9 +28,7 @@ class QuizResultActivity : AppCompatActivity() {
     private val userAnswers = mutableMapOf<Int, Int>()
     private var countDownTimer: CountDownTimer? = null
     private var quizTopic: String = "General"
-    private var isShowingAnswer = false
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quiz_result)
@@ -41,7 +37,6 @@ class QuizResultActivity : AppCompatActivity() {
         questionProgressText = findViewById(R.id.questionProgressText)
         optionsRadioGroup = findViewById(R.id.optionsRadioGroup)
         nextButton = findViewById(R.id.nextButton)
-        prevButton = findViewById(R.id.prevButton)
         timerTextView = findViewById(R.id.timerTextView)
 
         val rawQuizData = intent.getStringExtra("QUIZ_DATA")
@@ -60,41 +55,31 @@ class QuizResultActivity : AppCompatActivity() {
             if (questions.isNotEmpty()) {
                 showQuestion(0)
             } else {
-                questionTextView.text = "Error: Could not load questions from the response."
-                Log.e("QuizResultActivity", "Parsing failed. Raw data: $rawQuizData")
+                showParsingError(rawQuizData)
             }
         }
 
         nextButton.setOnClickListener {
             handleNextButtonClick()
         }
-
-        prevButton.setOnClickListener {
-        }
-        prevButton.isEnabled = false
     }
 
     private fun handleNextButtonClick() {
-        if (isShowingAnswer) {
-            currentQuestionIndex++
-            if (currentQuestionIndex < questions.size) {
-                showQuestion(currentQuestionIndex)
-            } else {
-                finishQuizAndShowScore()
-            }
+        // Save the user's answer for the current question
+        saveCurrentAnswer()
+
+        // Move to the next question
+        currentQuestionIndex++
+        if (currentQuestionIndex < questions.size) {
+            showQuestion(currentQuestionIndex)
         } else {
-            val selectedId = optionsRadioGroup.checkedRadioButtonId
-            if (selectedId != -1) {
-                saveCurrentAnswer()
-                showCorrectAnswer()
-            }
+            // If it's the end of the quiz, finish and show the score
+            finishQuizAndShowScore()
         }
     }
 
     private fun showQuestion(index: Int) {
         if (index >= questions.size) return
-
-        isShowingAnswer = false
         val q = questions[index]
 
         questionTextView.text = q.text
@@ -106,16 +91,16 @@ class QuizResultActivity : AppCompatActivity() {
             val rb = RadioButton(this)
             rb.text = option
             rb.id = i
-            rb.setTextColor(Color.BLACK)
-            rb.setBackgroundColor(Color.TRANSPARENT)
-            rb.isClickable = true
+            rb.setTextColor(Color.BLACK) // Ensure text is readable
             optionsRadioGroup.addView(rb)
         }
 
+        // If the user has already answered this question, check the saved answer
         if (userAnswers.containsKey(index)) {
             optionsRadioGroup.check(userAnswers[index]!!)
         }
 
+        // Update button text on the last question
         nextButton.text = if (index == questions.size - 1) "Finish" else "Next"
     }
 
@@ -124,27 +109,6 @@ class QuizResultActivity : AppCompatActivity() {
         if (selectedId != -1) {
             userAnswers[currentQuestionIndex] = selectedId
         }
-    }
-
-    private fun showCorrectAnswer() {
-        isShowingAnswer = true
-        val correctAnswerId = questions[currentQuestionIndex].correctAnswerIndex
-        val selectedAnswerId = userAnswers[currentQuestionIndex]
-
-        for (i in 0 until optionsRadioGroup.childCount) {
-            val button = optionsRadioGroup.getChildAt(i) as RadioButton
-            button.isClickable = false
-
-            if (button.id == correctAnswerId) {
-                button.setBackgroundColor(Color.GREEN)
-                button.setTextColor(Color.WHITE)
-            } else if (button.id == selectedAnswerId && selectedAnswerId != correctAnswerId) {
-                button.setBackgroundColor(Color.RED)
-                button.setTextColor(Color.WHITE)
-            }
-        }
-
-        nextButton.text = if (currentQuestionIndex < questions.size - 1) "Continue" else "Finish"
     }
 
     private fun finishQuizAndShowScore() {
@@ -157,16 +121,22 @@ class QuizResultActivity : AppCompatActivity() {
         }
         val scoreText = "$score/${totalQuestionsRequested}"
 
+        // Save score to database
         lifecycleScope.launch {
             try {
                 val db = AppDatabase.getDatabase(applicationContext)
-                val resultEntity = QuizResultEntity(topic = quizTopic, score = scoreText, timestamp = System.currentTimeMillis())
+                val resultEntity = QuizResultEntity(
+                    topic = quizTopic,
+                    score = scoreText,
+                    timestamp = System.currentTimeMillis()
+                )
                 db.quizDao().insertQuizResult(resultEntity)
             } catch (e: Exception) {
                 Log.e("QuizResultActivity", "Failed to save score to database", e)
             }
         }
 
+        // Show final score dialog
         AlertDialog.Builder(this)
             .setTitle("Quiz Completed!")
             .setMessage("You scored $scoreText.\nResult saved to history!")
@@ -193,48 +163,60 @@ class QuizResultActivity : AppCompatActivity() {
 
             override fun onFinish() {
                 timerTextView.text = "Time's Up!"
+                saveCurrentAnswer() // Save any selected answer before finishing
                 finishQuizAndShowScore()
             }
         }.start()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        countDownTimer?.cancel()
-    }
-
     private fun parseQuizData(data: String): List<Question> {
         val questionsList = mutableListOf<Question>()
-        val questionBlockRegex = Regex("(?ism)(Question \\d{1,2}:.*?)(?=Question \\d{1,2}:|$)")
+        try {
+            val questionBlocks = data.split(Regex("(?i)Question \\d+:"))
+                .filter { it.isNotBlank() }
 
-        val matches = questionBlockRegex.findAll(data)
-
-        for (match in matches) {
-            val block = match.value
-            try {
+            for (block in questionBlocks) {
                 val lines = block.lines().map { it.trim() }.filter { it.isNotEmpty() }
                 if (lines.isEmpty()) continue
 
-                val questionText = lines.first().replace(Regex("(?i)Question \\d{1,2}:"), "").trim()
-                val optionLines = lines.filter { it.matches(Regex("^[a-dA-D][.)].*")) }
-                val answerLine = lines.firstOrNull { it.matches(Regex("(?i)^Answer:?\\s*[a-dA-D].*")) }
+                val questionText = lines[0]
+                val options = lines.filter { it.matches(Regex("^[A-D][.)].*")) }
+                    .map { it.substring(2).trim() }
 
-                if (optionLines.size == 4 && answerLine != null) {
-                    val options = optionLines.map { it.substring(2).trim() }
-                    val answerChar = answerLine.find { it.isLetter() }
+                val answerLine = lines.firstOrNull { it.lowercase().startsWith("answer:") }
+                if (options.size >= 4 && answerLine != null) {
+                    val answerChar = answerLine.substringAfter(":").trim().firstOrNull()
                     val correctIndex = when (answerChar?.uppercaseChar()) {
-                        'A' -> 0; 'B' -> 1; 'C' -> 2; 'D' -> 3
+                        'A' -> 0
+                        'B' -> 1
+                        'C' -> 2
+                        'D' -> 3
                         else -> -1
                     }
-
                     if (correctIndex != -1) {
-                        questionsList.add(Question(questionText, options, correctIndex))
+                        questionsList.add(Question(questionText, options.take(4), correctIndex))
                     }
                 }
-            } catch (e: Exception) {
-                Log.e("ParseQuizData", "Failed to parse a question block: $block", e)
             }
+        } catch (e: Exception) {
+            Log.e("ParseQuizData", "Exception during parsing", e)
+            return emptyList()
         }
         return questionsList
+    }
+
+    private fun showParsingError(rawData: String) {
+        Log.e("QuizResultActivity", "Parsing failed. Raw data: $rawData")
+        AlertDialog.Builder(this)
+            .setTitle("Error")
+            .setMessage("Could not load questions from the AI's response. The format was unexpected.")
+            .setPositiveButton("OK") { _, _ -> finish() }
+            .setCancelable(false)
+            .show()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        countDownTimer?.cancel()
     }
 }

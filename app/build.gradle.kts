@@ -71,5 +71,5 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 
     // Google AI client SDK for Android (Gemini)
-    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation("com.google.ai.client.generativeai:generativeai:0.6.0")
 }

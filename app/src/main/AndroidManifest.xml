@@ -40,7 +40,7 @@
         <activity android:name=".QuizResultActivity" />
         <!-- 4. The history page -->
         <activity android:name=".HistoryActivity" />
-        <!-- 5. the register page -->
+        <!-- 5. the register page is -->
         <activity android:name=".RegisterActivity" />
 
 
