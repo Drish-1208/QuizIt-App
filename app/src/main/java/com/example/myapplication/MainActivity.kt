@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    // Variables for all the views in your XML layout
     private lateinit var topicEditText: TextInputEditText
     private lateinit var questionsCountEditText: TextInputEditText
     private lateinit var timerEditText: TextInputEditText
@@ -32,22 +31,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var logoutButton: Button
     private lateinit var selectedPdfTextView: TextView
     private lateinit var progressBar: ProgressBar
-
-    // This code handles the result from the file picker
     private val pdfPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
-            // Get the clean file name from the URI
             val fileName = getFileName(it)
-            // Update the TextView with the file name
             selectedPdfTextView.text = fileName
             selectedPdfTextView.visibility = View.VISIBLE
 
             Toast.makeText(this, "Selected: $fileName", Toast.LENGTH_SHORT).show()
 
-            // Future step: Start the quiz from the PDF
-            // val intent = Intent(this, PdfQuizActivity::class.java)
-            // intent.data = it
-            // startActivity(intent)
+
         }
     }
 
@@ -61,7 +53,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Check if user is logged in
+        // check if user is logged in
         val sharedPreferences = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
         val isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
 
@@ -75,7 +67,7 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        // Initialize all the views from your layout file
+        // initialize all the views
         topicEditText = findViewById(R.id.topicEditText)
         questionsCountEditText = findViewById(R.id.questionsCountEditText)
         timerEditText = findViewById(R.id.timerEditText)
@@ -86,14 +78,13 @@ class MainActivity : AppCompatActivity() {
         selectedPdfTextView = findViewById(R.id.selectedPdfTextView)
         progressBar = findViewById(R.id.progressBar)
 
-        // Set click listeners for all buttons
         generateQuizButton.setOnClickListener {
             val topic = topicEditText.text.toString().trim()
             val numQuestionsStr = questionsCountEditText.text.toString().trim()
             val timeStr = timerEditText.text.toString().trim()
 
-            val numQuestions = numQuestionsStr.toIntOrNull() ?: 10 // Default to 10 if empty
-            val timeInMinutes = timeStr.toLongOrNull() ?: 0 // Default to 0 if empty
+            val numQuestions = numQuestionsStr.toIntOrNull() ?: 10
+            val timeInMinutes = timeStr.toLongOrNull() ?: 0
 
             if (topic.isNotEmpty()) {
                 generateQuiz(topic, numQuestions, timeInMinutes)
@@ -103,7 +94,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         selectPdfButton.setOnClickListener {
-            // This opens the file picker and only shows PDF files
             pdfPickerLauncher.launch("application/pdf")
         }
 
@@ -121,16 +111,16 @@ class MainActivity : AppCompatActivity() {
         setLoading(true)
         lifecycleScope.launch {
             try {
-                // Updated prompt to use the number of questions
                 val prompt = "Generate a $numQuestions-question multiple-choice quiz on '$topic'. For each question, provide 4 options (A, B, C, D) and the correct answer on a new line like 'Answer: A'."
                 val response = generativeModel.generateContent(prompt)
                 val quizText = response.text
 
                 if (quizText != null) {
-                    val intent = Intent(this@MainActivity, QuizResultActivity::class.java)
+                    val intent = Intent(this@MainActivity,QuizResultActivity::class.java)
                     intent.putExtra("QUIZ_DATA", quizText)
                     intent.putExtra("TIMER_MINUTES", timeInMinutes)
                     intent.putExtra("QUIZ_TOPIC", topic)
+                    intent.putExtra("NUM_QUESTIONS", numQuestions)
                     startActivity(intent)
                 } else {
                     showError("Failed to generate quiz. Response was empty.")
@@ -164,7 +154,6 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
-    // Helper function to get a clean file name from a URI
     private fun getFileName(uri: Uri): String {
         var name = "Selected File"
         val cursor = contentResolver.query(uri, null, null, null, null)

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.util.Log
 import android.widget.Button
 import android.widget.RadioButton
 import android.widget.RadioGroup
@@ -24,6 +25,7 @@ class QuizResultActivity : AppCompatActivity() {
     private lateinit var timerTextView: TextView
 
     private var questions: List<Question> = emptyList()
+    private var totalQuestionsRequested = 0
     private var currentQuestionIndex = 0
     private val userAnswers = mutableMapOf<Int, Int>()
     private var countDownTimer: CountDownTimer? = null
@@ -45,6 +47,7 @@ class QuizResultActivity : AppCompatActivity() {
         val rawQuizData = intent.getStringExtra("QUIZ_DATA")
         val minutes = intent.getLongExtra("TIMER_MINUTES", 0)
         quizTopic = intent.getStringExtra("QUIZ_TOPIC") ?: "General Knowledge"
+        totalQuestionsRequested = intent.getIntExtra("NUM_QUESTIONS", 10)
 
         if (minutes > 0) {
             startTimer(minutes)
@@ -57,136 +60,45 @@ class QuizResultActivity : AppCompatActivity() {
             if (questions.isNotEmpty()) {
                 showQuestion(0)
             } else {
-                questionTextView.text = "Error: Could not load questions."
+                questionTextView.text = "Error: Could not load questions from the response."
+                Log.e("QuizResultActivity", "Parsing failed. Raw data: $rawQuizData")
             }
         }
 
-        // --- ENTIRE NEXT BUTTON LOGIC IS REPLACED ---
         nextButton.setOnClickListener {
-            // If we are currently showing the answer, then move to the next question.
-            if (isShowingAnswer) {
-                currentQuestionIndex++
-                if (currentQuestionIndex < questions.size - 1) {
-                    showQuestion(currentQuestionIndex)
-                } else {
-                    finishQuizAndShowScore()
-                }
-            } else {
-                // If we are NOT showing an answer, then check the selected answer and show it.
-                val selectedId = optionsRadioGroup.checkedRadioButtonId
-                if (selectedId != -1) {
-                    saveCurrentAnswer() // Save the answer first
-                    showCorrectAnswer() // Then show the colors
-                } else {
-                }
-            }
+            handleNextButtonClick()
         }
 
-        // Previous button is disabled because this new feature makes it confusing.
+        prevButton.setOnClickListener {
+        }
         prevButton.isEnabled = false
     }
 
-    // --- THIS IS A NEW FUNCTION ---
-    private fun showCorrectAnswer() {
-        val correctAnswerId = questions[currentQuestionIndex].correctAnswerIndex
-        val selectedAnswerId = userAnswers[currentQuestionIndex]
-
-        // This checks if the user's answer was correct and updates the score.
-        if (selectedAnswerId == correctAnswerId) {
-            // We can add logic to update score here if we want instant score update
-        }
-
-        // Go through each radio button to color it
-        for (i in 0 until optionsRadioGroup.childCount) {
-            val button = optionsRadioGroup.getChildAt(i) as RadioButton
-            button.isClickable = false // Stop user from changing their answer
-
-            // If this button is the correct answer, color it GREEN
-            if (button.id == correctAnswerId) {
-                button.setBackgroundColor(Color.GREEN)
-                button.setTextColor(Color.WHITE) // Make text easy to read on green background
-            }
-            // If this button was the user's choice AND it was WRONG, color it RED
-            else if (button.id == selectedAnswerId && selectedAnswerId != correctAnswerId) {
-                button.setBackgroundColor(Color.RED)
-                button.setTextColor(Color.WHITE) // Make text easy to read on red background
-            }
-        }
-
-        isShowingAnswer = true // We are now in "showing answer" mode.
-        // Change the button text to prompt the user to continue.
-        nextButton.text = if (currentQuestionIndex < questions.size - 1) "Continue" else "Finish"
-    }
-
-    private fun finishQuizAndShowScore() {
-        countDownTimer?.cancel()
-        var score = 0
-        for (i in questions.indices) {
-            // Use .getOrDefault because user might not have answered all questions if timer runs out.
-            if (userAnswers.getOrDefault(i, -1) == questions[i].correctAnswerIndex) {
-                score++
-            }
-        }
-
-        val scoreText = "$score/${questions.size}"
-
-        // This part saves the result for the History page. We will keep it simple.
-        val resultEntity = QuizResultEntity(
-            topic = quizTopic,
-            score = scoreText,
-            timestamp = System.currentTimeMillis()
-        )
-
-        lifecycleScope.launch {
-            // You will need to replace AppDatabase and quizDao with your actual DB classes.
-            val db = AppDatabase.getDatabase(applicationContext)
-            db.quizDao().insertQuizResult(resultEntity)
-        }
-
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Quiz Completed!")
-        builder.setMessage("You scored $scoreText.\nResult saved to history!")
-        builder.setPositiveButton("Return to Home") { _, _ ->
-            val intent = Intent(this, MainActivity::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(intent)
-            finish()
-        }
-        builder.setCancelable(false)
-        builder.show()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        countDownTimer?.cancel()
-    }
-
-    private fun startTimer(minutes: Long) {
-        val timeInMillis = minutes * 60 * 1000
-        countDownTimer = object : CountDownTimer(timeInMillis, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                val remainingSeconds = millisUntilFinished / 1000
-                val min = remainingSeconds / 60
-                val sec = remainingSeconds % 60
-                timerTextView.text = String.format("Time: %02d:%02d", min, sec)
-                if (remainingSeconds < 10) timerTextView.setTextColor(Color.RED)
-            }
-
-            override fun onFinish() {
-                timerTextView.text = "Time's Up!"
+    private fun handleNextButtonClick() {
+        if (isShowingAnswer) {
+            currentQuestionIndex++
+            if (currentQuestionIndex < questions.size) {
+                showQuestion(currentQuestionIndex)
+            } else {
                 finishQuizAndShowScore()
             }
-        }.start()
+        } else {
+            val selectedId = optionsRadioGroup.checkedRadioButtonId
+            if (selectedId != -1) {
+                saveCurrentAnswer()
+                showCorrectAnswer()
+            }
+        }
     }
 
     private fun showQuestion(index: Int) {
-        // --- ADDITIONS TO THIS FUNCTION ---
-        isShowingAnswer = false // Reset the state for the new question.
-        prevButton.isEnabled = false // Keep the previous button disabled.
+        if (index >= questions.size) return
 
+        isShowingAnswer = false
         val q = questions[index]
-        questionTextView.text = "Q${index + 1}: ${q.text}"
-        questionProgressText.text = "Question ${index + 1} of ${questions.size}"
+
+        questionTextView.text = q.text
+        questionProgressText.text = "Question ${index + 1} of ${totalQuestionsRequested}"
         optionsRadioGroup.removeAllViews()
         optionsRadioGroup.clearCheck()
 
@@ -194,13 +106,12 @@ class QuizResultActivity : AppCompatActivity() {
             val rb = RadioButton(this)
             rb.text = option
             rb.id = i
-            rb.setTextColor(Color.BLACK) // Reset text color
-            rb.setBackgroundColor(Color.TRANSPARENT) // Reset background color
-            rb.isClickable = true // Make sure button is clickable
+            rb.setTextColor(Color.BLACK)
+            rb.setBackgroundColor(Color.TRANSPARENT)
+            rb.isClickable = true
             optionsRadioGroup.addView(rb)
         }
 
-        // This part of your code was good, it re-selects an answer if the user already made one.
         if (userAnswers.containsKey(index)) {
             optionsRadioGroup.check(userAnswers[index]!!)
         }
@@ -215,24 +126,105 @@ class QuizResultActivity : AppCompatActivity() {
         }
     }
 
+    private fun showCorrectAnswer() {
+        isShowingAnswer = true
+        val correctAnswerId = questions[currentQuestionIndex].correctAnswerIndex
+        val selectedAnswerId = userAnswers[currentQuestionIndex]
+
+        for (i in 0 until optionsRadioGroup.childCount) {
+            val button = optionsRadioGroup.getChildAt(i) as RadioButton
+            button.isClickable = false
+
+            if (button.id == correctAnswerId) {
+                button.setBackgroundColor(Color.GREEN)
+                button.setTextColor(Color.WHITE)
+            } else if (button.id == selectedAnswerId && selectedAnswerId != correctAnswerId) {
+                button.setBackgroundColor(Color.RED)
+                button.setTextColor(Color.WHITE)
+            }
+        }
+
+        nextButton.text = if (currentQuestionIndex < questions.size - 1) "Continue" else "Finish"
+    }
+
+    private fun finishQuizAndShowScore() {
+        countDownTimer?.cancel()
+        var score = 0
+        for (i in questions.indices) {
+            if (userAnswers.getOrDefault(i, -1) == questions[i].correctAnswerIndex) {
+                score++
+            }
+        }
+        val scoreText = "$score/${totalQuestionsRequested}"
+
+        lifecycleScope.launch {
+            try {
+                val db = AppDatabase.getDatabase(applicationContext)
+                val resultEntity = QuizResultEntity(topic = quizTopic, score = scoreText, timestamp = System.currentTimeMillis())
+                db.quizDao().insertQuizResult(resultEntity)
+            } catch (e: Exception) {
+                Log.e("QuizResultActivity", "Failed to save score to database", e)
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Quiz Completed!")
+            .setMessage("You scored $scoreText.\nResult saved to history!")
+            .setPositiveButton("Return to Home") { _, _ ->
+                val intent = Intent(this, MainActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                finish()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun startTimer(minutes: Long) {
+        val timeInMillis = minutes * 60 * 1000
+        countDownTimer = object : CountDownTimer(timeInMillis, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val remainingSeconds = millisUntilFinished / 1000
+                val min = remainingSeconds / 60
+                val sec = remainingSeconds % 60
+                timerTextView.text = String.format("Time: %02d:%02d", min, sec)
+                if (remainingSeconds < 20) timerTextView.setTextColor(Color.RED)
+            }
+
+            override fun onFinish() {
+                timerTextView.text = "Time's Up!"
+                finishQuizAndShowScore()
+            }
+        }.start()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        countDownTimer?.cancel()
+    }
+
     private fun parseQuizData(data: String): List<Question> {
         val questionsList = mutableListOf<Question>()
-        val rawQuestions = data.split(Regex("(?=Q\\d+:)"))
-            .filter { it.trim().startsWith("Q") }
+        val questionBlockRegex = Regex("(?ism)(Question \\d{1,2}:.*?)(?=Question \\d{1,2}:|$)")
 
-        for (rawQ in rawQuestions) {
+        val matches = questionBlockRegex.findAll(data)
+
+        for (match in matches) {
+            val block = match.value
             try {
-                val lines = rawQ.lines().filter { it.isNotBlank() }
-                val questionTextWithPrefix = lines.firstOrNull()?.trim() ?: continue
-                val questionText = questionTextWithPrefix.substringAfter(":").trim()
-                val optionLines = lines.filter { it.matches(Regex("^[A-D]\\..*")) }
-                val answerLine = lines.firstOrNull { it.startsWith("Answer:") }
+                val lines = block.lines().map { it.trim() }.filter { it.isNotEmpty() }
+                if (lines.isEmpty()) continue
+
+                val questionText = lines.first().replace(Regex("(?i)Question \\d{1,2}:"), "").trim()
+                val optionLines = lines.filter { it.matches(Regex("^[a-dA-D][.)].*")) }
+                val answerLine = lines.firstOrNull { it.matches(Regex("(?i)^Answer:?\\s*[a-dA-D].*")) }
 
                 if (optionLines.size == 4 && answerLine != null) {
-                    val options = optionLines.map { it.substringAfter(". ").trim() } // Cleaned up options
-                    val answerChar = answerLine.substringAfter(":").trim().firstOrNull()
+                    val options = optionLines.map { it.substring(2).trim() }
+                    val answerChar = answerLine.find { it.isLetter() }
                     val correctIndex = when (answerChar?.uppercaseChar()) {
-                        'A' -> 0; 'B' -> 1; 'C' -> 2; 'D' -> 3; else -> -1
+                        'A' -> 0; 'B' -> 1; 'C' -> 2; 'D' -> 3
+                        else -> -1
                     }
 
                     if (correctIndex != -1) {
@@ -240,7 +232,7 @@ class QuizResultActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                // Catching errors to prevent crashes from bad Gemini data.
+                Log.e("ParseQuizData", "Failed to parse a question block: $block", e)
             }
         }
         return questionsList
