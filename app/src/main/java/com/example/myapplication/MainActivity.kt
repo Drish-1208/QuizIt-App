@@ -1,7 +1,6 @@
 package com.example.myapplication
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -21,6 +20,10 @@ import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -181,14 +184,30 @@ class MainActivity : AppCompatActivity() {
         }
         return result
     }
-
+    // THIS IS THE REAL, WORKING PDF FUNCTION
     private suspend fun readPdfText(uri: Uri): String {
-        // PDF text extraction is complex. This is a placeholder.
-        // For a real implementation, you'd need a library like iTextPDF or PdfiumAndroid.
         return withContext(Dispatchers.IO) {
-            "This is placeholder text from the PDF. Real extraction needs a library."
+            try {
+                PDFBoxResourceLoader.init(applicationContext)
+
+                val inputStream = contentResolver.openInputStream(uri)
+                val document = PDDocument.load(inputStream)
+                val stripper = PDFTextStripper()
+                val text = stripper.getText(document)
+                document.close()
+                inputStream?.close()
+
+                // Limit the text to avoid sending too much data to the AI
+                text.take(20000)
+            } catch (e: Exception) {
+                Log.e("PdfReader", "Error reading PDF text", e)
+                "Error reading PDF file."
+            }
         }
     }
+
+
+
 
     private fun logoutUser() {
         val sharedPreferences = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)

@@ -1,4 +1,3 @@
-
 import java.util.Properties
 import java.io.FileInputStream
 
@@ -6,14 +5,11 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
-
 }
-
-// this code reads  local.properties file
 val localProperties = Properties()
 val localPropertiesFile = project.rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localProperties.load(FileInputStream(localPropertiesFile)) // <<< NO "java.io." PREFIX NEEDED
+    localProperties.load(FileInputStream(localPropertiesFile))
 }
 
 android {
@@ -61,15 +57,18 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
-    val room_version = "2.6.1"
 
+    // Room Database
+    val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     kapt("androidx.room:room-compiler:$room_version")
 
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-
     // Google AI client SDK for Android (Gemini)
     implementation("com.google.ai.client.generativeai:generativeai:0.6.0")
+
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }

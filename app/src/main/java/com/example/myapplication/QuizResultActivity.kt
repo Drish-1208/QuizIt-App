@@ -65,7 +65,7 @@ class QuizResultActivity : AppCompatActivity() {
     }
 
     private fun handleNextButtonClick() {
-        // Save the user's answer for the current question
+        // Save the users answer for the current question
         saveCurrentAnswer()
 
         // Move to the next question
