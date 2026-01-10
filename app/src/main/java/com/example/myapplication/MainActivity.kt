@@ -138,7 +138,7 @@ class MainActivity : AppCompatActivity() {
                     val intent = Intent(this@MainActivity, QuizResultActivity::class.java).apply {
                         putExtra("QUIZ_DATA", quizText)
                         putExtra("TIMER_MINUTES", timerMinutes)
-                        putExtra("QUIZ_TOPIC", if (selectedPdfUri != null) "PDF Quiz" else topic)
+                        putExtra("QUIZ_TOPIC", topic)
                         putExtra("NUM_QUESTIONS", numQuestions)
                     }
                     startActivity(intent)
@@ -160,7 +160,6 @@ class MainActivity : AppCompatActivity() {
             selectedPdfUri = it
             val fileName = getFileName(it)
             selectedPdfTextView.text = fileName ?: "PDF Selected"
-            topicEditText.isEnabled = false // Disable topic input when PDF is selected
             Toast.makeText(this, "PDF selected. Topic will be based on the file.", Toast.LENGTH_SHORT).show()
         }
     }
@@ -184,7 +183,6 @@ class MainActivity : AppCompatActivity() {
         }
         return result
     }
-    // THIS IS THE REAL, WORKING PDF FUNCTION
     private suspend fun readPdfText(uri: Uri): String {
         return withContext(Dispatchers.IO) {
             try {

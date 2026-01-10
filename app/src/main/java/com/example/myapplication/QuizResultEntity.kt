@@ -9,5 +9,5 @@ data class QuizResultEntity(
     val id: Int = 0,
     val topic: String,
     val score: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )
