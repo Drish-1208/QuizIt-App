@@ -20,7 +20,6 @@ class LoginActivity : AppCompatActivity() {
         val loginButton = findViewById<Button>(R.id.loginButton)
         val registerTextView = findViewById<TextView>(R.id.registerTextView)
 
-        // --- for login ---
         loginButton.setOnClickListener {
             val email = emailEditText.text.toString()
             val password = passwordEditText.text.toString()
@@ -38,7 +37,7 @@ class LoginActivity : AppCompatActivity() {
                 val intent = Intent(this, MainActivity::class.java)
                 startActivity(intent)
 
-                finish() // Finish login
+                finish() // Finis login
             } else {
                 Toast.makeText(this, "Invalid email or password.", Toast.LENGTH_SHORT).show()
             }

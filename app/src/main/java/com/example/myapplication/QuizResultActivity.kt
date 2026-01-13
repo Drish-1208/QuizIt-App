@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
@@ -13,8 +14,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import com.example.myapplication.AppDatabase
-import com.example.myapplication.QuizResultEntity
 
 data class QuizQuestion(
     val question: String,
@@ -37,6 +36,9 @@ class QuizResultActivity : AppCompatActivity() {
     private lateinit var feedbackTextView: TextView
     private lateinit var nextButton: Button
     private lateinit var timerTextView: TextView
+
+    private lateinit var quizProgressBar: ProgressBar
+
 
     private var questions: List<QuizQuestion> = listOf()
     private var currentQuestionIndex = 0
@@ -79,11 +81,6 @@ class QuizResultActivity : AppCompatActivity() {
 
         displayQuestion()
 
-        optionsRadioGroup.setOnCheckedChangeListener { _, checkedId ->
-            if (checkedId != -1) {
-                checkAnswer()
-            }
-        }
 
         nextButton.setOnClickListener {
             loadNextQuestion()
@@ -106,6 +103,7 @@ class QuizResultActivity : AppCompatActivity() {
         feedbackTextView = findViewById(R.id.feedbackTextView)
         nextButton = findViewById(R.id.nextButton)
         timerTextView = findViewById(R.id.timerTextView)
+        quizProgressBar = findViewById(R.id.quizProgressBar)
     }
 
     private fun startTimer(minutes: Long) {
@@ -128,8 +126,10 @@ class QuizResultActivity : AppCompatActivity() {
     private fun displayQuestion() {
         if (currentQuestionIndex < questions.size) {
             val question = questions[currentQuestionIndex]
+            quizProgressBar.max = questions.size
+            quizProgressBar.progress = currentQuestionIndex + 1
+            quizProgressBar.progressTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#4CAF50"))
 
-            // This fixes the bug where feedback was shown too early
             feedbackTextView.isVisible = false
 
             nextButton.isVisible = false
@@ -142,6 +142,12 @@ class QuizResultActivity : AppCompatActivity() {
             optionB.text = question.optionB
             optionC.text = question.optionC
             optionD.text = question.optionD
+            optionsRadioGroup.setOnCheckedChangeListener { _, checkedId ->
+                if (checkedId != -1) {
+                    checkAnswer()
+                    optionsRadioGroup.setOnCheckedChangeListener(null)
+                }
+            }
         }
     }
 

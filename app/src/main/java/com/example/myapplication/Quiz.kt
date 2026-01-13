@@ -12,7 +12,6 @@ data class Quiz(
     val totalQuestions: Int,
     val timestamp: Long,
 
-    // --- NEW COLUMNS TO ADD FOR THE REVIEW FEATURE ---
     val fullQuizData: String,
     val userAnswers: String,
     val correctAnswers: String,

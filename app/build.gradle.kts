@@ -25,7 +25,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // this line creates the api key variable from properties file
         buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY")}\"")
     }
 
@@ -64,7 +63,6 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version")
     kapt("androidx.room:room-compiler:$room_version")
 
-    // Google AI client SDK for Android (Gemini)
     implementation("com.google.ai.client.generativeai:generativeai:0.6.0")
 
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")

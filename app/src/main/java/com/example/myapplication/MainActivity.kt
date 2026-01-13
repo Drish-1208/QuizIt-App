@@ -23,8 +23,6 @@ import kotlinx.coroutines.withContext
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
-
-
 class MainActivity : AppCompatActivity() {
 
     private lateinit var topicEditText: TextInputEditText
@@ -39,7 +37,6 @@ class MainActivity : AppCompatActivity() {
 
     private var selectedPdfUri: Uri? = null
 
-    // This uses the model compatible with your SDK version (0.6.0)
     private val generativeModel by lazy {
         GenerativeModel(
             modelName = "gemini-2.5-flash",
@@ -68,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         generateQuizButton = findViewById(R.id.generateQuizButton)
         viewHistoryButton = findViewById(R.id.viewHistoryButton)
         logoutButton = findViewById(R.id.logoutButton)
+
         progressBar = findViewById(R.id.progressBar)
 
         selectPdfButton.setOnClickListener {
@@ -85,7 +83,11 @@ class MainActivity : AppCompatActivity() {
             if (topic.isNotEmpty() || selectedPdfUri != null) {
                 generateQuiz(topic, numQuestions, timerMinutes)
             } else {
-                Toast.makeText(this, "Please enter a topic or select a PDF file", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Please enter a topic or select a PDF file",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
 
@@ -95,6 +97,7 @@ class MainActivity : AppCompatActivity() {
 
         logoutButton.setOnClickListener {
             logoutUser()
+
         }
     }
 

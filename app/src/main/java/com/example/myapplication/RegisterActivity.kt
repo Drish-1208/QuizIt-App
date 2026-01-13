@@ -13,32 +13,27 @@ class RegisterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
 
-        // Find all the input fields
-        val usernameEditText = findViewById<TextInputEditText>(R.id.usernameEditText) // New
+        val usernameEditText = findViewById<TextInputEditText>(R.id.usernameEditText)
         val emailEditText = findViewById<TextInputEditText>(R.id.emailEditText)
         val passwordEditText = findViewById<TextInputEditText>(R.id.passwordEditText)
         val registerButton = findViewById<Button>(R.id.registerButton)
 
         registerButton.setOnClickListener {
-            // Get text from all fields
-            val username = usernameEditText.text.toString() // New
+            val username = usernameEditText.text.toString()
             val email = emailEditText.text.toString()
             val password = passwordEditText.text.toString()
 
-            // Make sure no fields are blank
             if (username.isNotBlank() && email.isNotBlank() && password.isNotBlank()) {
-                // --- Save All User Data ---
                 val sharedPreferences = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
                 with(sharedPreferences.edit()) {
-                    putString("username", username) // New: Save the username
+                    putString("username", username)
                     putString("email", email)
                     putString("password", password)
-                    apply() // Save the changes
+                    apply()
                 }
 
                 Toast.makeText(this, "Registration Successful!", Toast.LENGTH_SHORT).show()
 
-                // Go back to the login screen
                 finish()
             } else {
                 Toast.makeText(this, "Please fill out all fields.", Toast.LENGTH_SHORT).show()
