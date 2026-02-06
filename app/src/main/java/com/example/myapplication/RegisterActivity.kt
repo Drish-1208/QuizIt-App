@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.textfield.TextInputEditText
@@ -32,8 +33,13 @@ class RegisterActivity : AppCompatActivity() {
         val usernameEditText = findViewById<TextInputEditText>(R.id.usernameEditText)
         val emailEditText = findViewById<TextInputEditText>(R.id.emailEditText)
         val passwordEditText = findViewById<TextInputEditText>(R.id.passwordEditText)
-        val registerButton = findViewById<Button>(R.id.registerButton)
+        val registerButton = findViewById<TextView>(R.id.registerButton)
+        val loginTextView = findViewById<TextView>(R.id.loginTextView)
 
+        loginTextView.setOnClickListener {
+            val intent = Intent(this, LoginActivity::class.java)
+            startActivity(intent)
+        }
         // Set the button's click listener
         registerButton.setOnClickListener {
             val username = usernameEditText.text.toString().trim()
@@ -78,14 +84,10 @@ class RegisterActivity : AppCompatActivity() {
                         val userId = firebaseUser.uid
                         saveUserToDatabase(userId, username, email)
 
-                    } else {
-                        // If sign in fails, display a message to the user.
+                    } else{
+                        // Authentication failed
                         Log.w("RegisterActivity", "createUserWithEmail:failure", task.exception)
-                        Toast.makeText(
-                            baseContext,
-                            "Authentication failed: ${task.exception?.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(this, "Authentication Successful.", Toast.LENGTH_SHORT).show()
                     }
                 }
         }
