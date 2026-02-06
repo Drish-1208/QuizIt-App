@@ -36,12 +36,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- 3. the history page -->
         <activity android:name=".QuizResultActivity" />
-        <!-- 4. The history page -->
         <activity android:name=".HistoryActivity" />
-        <!-- 5. the register page is -->
         <activity android:name=".RegisterActivity" />
+        <activity android:name=".TopicQuizActivity" />
+        <activity android:name=".ProfileActivity" />
+        <activity android:name=".changePasswordActivity" />
+
+
 
 
 

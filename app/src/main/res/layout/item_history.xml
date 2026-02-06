@@ -1,35 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- 1. Use MaterialCardView as the root for each item. -->
+<!-- This creates a distinct, elevated container for each quiz history entry. -->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="?android:attr/selectableItemBackground">
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutlineVariant">
 
-    <TextView
-        android:id="@+id/item_topic_text"
-        android:layout_width="wrap_content"
+    <!-- 2. Use ConstraintLayout for flexible and efficient positioning of text. -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Quiz Topic"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"/>
+        android:padding="16dp">
 
-    <TextView
-        android:id="@+id/item_score_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Score: 8/10"
-        android:textSize="16sp"
-        android:layout_marginTop="4dp"/>
+        <!-- 3. Icon for visual context. -->
+        <!-- An icon helps users quickly identify the item type. -->
+        <ImageView
+            android:id="@+id/item_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:tint="?attr/colorPrimary"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:contentDescription="Quiz icon" />
 
-    <TextView
-        android:id="@+id/item_date_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Jan 01, 2026 - 10:30 AM"
-        android:textSize="14sp"
-        android:textColor="@android:color/darker_gray"
-        android:layout_marginTop="4dp"/>
+        <!-- 4. Topic TextView with improved styling. -->
+        <!-- Larger and bolder text makes the topic stand out as the primary piece of information. -->
+        <TextView
+            android:id="@+id/item_topic_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintStart_toEndOf="@id/item_icon"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="History of Ancient Rome" />
 
-</LinearLayout>
+        <!-- 5. Score TextView -->
+        <TextView
+            android:id="@+id/item_score_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintStart_toStartOf="@id/item_topic_text"
+            app:layout_constraintTop_toBottomOf="@id/item_topic_text"
+            tools:text="Score: 8/10" />
+
+        <!-- 6. Date/Timestamp TextView -->
+        <!-- Placed at the bottom right for a conventional layout. -->
+        <TextView
+            android:id="@+id/item_date_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/item_topic_text"
+            tools:text="Feb 29, 2024, 10:30 AM" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

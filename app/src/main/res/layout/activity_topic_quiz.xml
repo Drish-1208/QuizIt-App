@@ -1,15 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?><androidx.constraintlayout.widget.ConstraintLayout
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F0F4F8"
-    tools:context=".MainActivity">
+    tools:context=".TopicQuizActivity">
 
+    <!-- ScrollView to handle smaller screens -->
     <ScrollView
-        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintTop_toTopOf="parent"
@@ -21,25 +21,25 @@
             android:padding="16dp">
 
             <TextView
-                android:id="@+id/welcomeTextView"
+                android:id="@+id/titleTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="PDF QUIZ"
+                android:text="Quick Quiz"
                 android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- Card 1: Select PDF & Name Quiz -->
+            <!-- Card for entering the topic -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/pdfCard"
+                android:id="@+id/topicCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 app:cardCornerRadius="12dp"
-                app:layout_constraintTop_toBottomOf="@id/welcomeTextView"
+                app:layout_constraintTop_toBottomOf="@id/titleTextView"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
@@ -52,53 +52,33 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="1. Select &amp; Name Quiz"
+                        android:text="1. Enter Quiz Topic"
                         android:textAppearance="?attr/textAppearanceTitleMedium"/>
 
-                    <Button
-                        android:id="@+id/selectPdfButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Select PDF File" />
-
-                    <TextView
-                        android:id="@+id/selectedPdfTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="8dp"
-                        android:text="No file selected"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        tools:text="mydocument_v1.pdf"/>
-
-                    <!-- THIS IS THE NEW INPUT FIELD -->
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/quizNameInputLayout"
+                        android:id="@+id/topicInputLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:hint="Name your quiz (e.g., 'Chapter 1 Review')">
+                        android:hint="e.g., Solar System">
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/quizNameEditText"
+                            android:id="@+id/topicEditText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="textCapSentences" />
+                            android:inputType="textCapSentences"/>
                     </com.google.android.material.textfield.TextInputLayout>
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Card 2: Quiz Settings -->
+            <!-- Card for quiz settings -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/settingsCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 app:cardCornerRadius="12dp"
-                app:layout_constraintTop_toBottomOf="@id/pdfCard"
+                app:layout_constraintTop_toBottomOf="@id/topicCard"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
@@ -153,7 +133,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Card 3 - Instructions -->
+            <!-- NEW: Card 3 - Instructions -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/instructionsCard"
                 android:layout_width="0dp"
@@ -181,35 +161,30 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="1. Select any PDF document from your device."
+                        android:text="1. Enter any topic you want to be quizzed on."
                         android:textAppearance="?attr/textAppearanceBodyMedium"/>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="2. Give your quiz a unique name to find it later."
+                        android:text="2. Specify the number of questions and an optional timer."
                         android:textAppearance="?attr/textAppearanceBodyMedium"/>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="3. Specify the number of questions and an optional timer."
-                        android:textAppearance="?attr/textAppearanceBodyMedium"/>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="4. Click 'Generate Quiz' and our AI will create a custom quiz for you based on the PDF content."
+                        android:text="3. Click 'Generate Quick Quiz' and our AI will create a quiz instantly for you."
                         android:textAppearance="?attr/textAppearanceBodyMedium"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
+    <!-- Bottom card for Navigation and Main Action -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomActionCard"
         android:layout_width="match_parent"
@@ -227,13 +202,13 @@
 
             <!-- Generate Quiz Button (Main Action) -->
             <Button
-                android:id="@+id/generateQuizButton"
+                android:id="@+id/generateTopicQuizButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:text="Generate Quiz"
                 android:padding="12dp"
+                android:text="Generate Quick Quiz"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
@@ -245,18 +220,18 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="PDF Quiz"
-                android:enabled="false"
-                app:layout_constraintTop_toBottomOf="@id/generateQuizButton"
+                app:layout_constraintTop_toBottomOf="@id/generateTopicQuizButton"
                 app:layout_constraintHorizontal_chainStyle="spread"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/quickQuizButton" />
+                app:layout_constraintEnd_toStartOf="@+id/quickQuizNavButton" />
 
             <Button
-                android:id="@+id/quickQuizButton"
+                android:id="@+id/quickQuizNavButton"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Quick Quiz"
+                android:enabled="false"
                 app:layout_constraintTop_toTopOf="@+id/pdfQuizNavButton"
                 app:layout_constraintStart_toEndOf="@+id/pdfQuizNavButton"
                 app:layout_constraintEnd_toStartOf="@+id/viewHistoryButton"/>
@@ -268,11 +243,11 @@
                 android:layout_height="wrap_content"
                 android:text="View History"
                 app:layout_constraintTop_toTopOf="@+id/pdfQuizNavButton"
-                app:layout_constraintStart_toEndOf="@+id/quickQuizButton"
-                app:layout_constraintEnd_toStartOf="@+id/ProfileButton" />
+                app:layout_constraintStart_toEndOf="@+id/quickQuizNavButton"
+                app:layout_constraintEnd_toStartOf="@+id/ProfileNavButton" />
 
             <Button
-                android:id="@+id/ProfileButton"
+                android:id="@+id/ProfileNavButton"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -284,6 +259,7 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- Progress bar for loading state -->
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleLarge"

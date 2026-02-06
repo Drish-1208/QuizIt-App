@@ -1,18 +1,11 @@
-package com.example.myapplication.db
+package com.example.myapplication
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import com.google.firebase.database.ServerValue
 
-@Entity(tableName = "quiz_history")
-data class Quiz(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val topic: String,
-    val score: Int,
-    val totalQuestions: Int,
-    val timestamp: Long,
-
-    val fullQuizData: String,
-    val userAnswers: String,
-    val correctAnswers: String,
+// This data class will hold the results of a single quiz.
+data class QuizResult(
+    val quizTopic: String ="",
+    val correctAnswers: Int = 0,
+    val totalQuestions: Int = 0,
+    val timestamp: Any = ServerValue.TIMESTAMP // Automatically records the time of the quiz
 )

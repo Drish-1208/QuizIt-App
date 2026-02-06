@@ -15,6 +15,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
+// This data class can remain the same
 data class QuizQuestion(
     val question: String,
     val optionA: String,
@@ -26,6 +27,7 @@ data class QuizQuestion(
 
 class QuizResultActivity : AppCompatActivity() {
 
+    // --- UI and State Variables (No changes here) ---
     private lateinit var questionNumberTextView: TextView
     private lateinit var questionTextView: TextView
     private lateinit var optionsRadioGroup: RadioGroup
@@ -36,31 +38,35 @@ class QuizResultActivity : AppCompatActivity() {
     private lateinit var feedbackTextView: TextView
     private lateinit var nextButton: Button
     private lateinit var timerTextView: TextView
-
     private lateinit var quizProgressBar: ProgressBar
-
-
     private var questions: List<QuizQuestion> = listOf()
     private var currentQuestionIndex = 0
     private var score = 0
-    private var quizTopic: String = "Quiz"
-
     private var countDownTimer: CountDownTimer? = null
-    private var timeTakenInMillis: Long = 0
-    private var quizStartTime: Long = 0
+
+    // --- 1. NEW: ROOM DATABASE VARIABLES ---
+    // The ID for the Room database entry. Default to -1 to indicate it's not set.
+    private var quizHistoryId: Long = -1L
+    private val quizHistoryDao by lazy {
+        QuizHistoryDatabase.getDatabase(applicationContext).quizHistoryDao()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quiz_result)
 
+        // No more Firebase initialization
         initializeViews()
 
+        // --- 2. GET DATA FROM INTENT (Updated for Room) ---
         val quizText = intent.getStringExtra("QUIZ_DATA")
-        quizTopic = intent.getStringExtra("QUIZ_TOPIC") ?: "Quiz"
+        // Get the Long ID for Room. Provide a default value of -1.
+        quizHistoryId = intent.getLongExtra("QUIZ_HISTORY_ID", -1L)
         val timerMinutes = intent.getLongExtra("TIMER_MINUTES", 0L)
 
-        if (quizText.isNullOrBlank()) {
-            Toast.makeText(this, "Failed to load quiz data.", Toast.LENGTH_SHORT).show()
+        // Check if the ID is valid. A value of -1 means it wasn't passed correctly.
+        if (quizText.isNullOrBlank() || quizHistoryId == -1L) {
+            Toast.makeText(this, "Failed to load quiz data or history ID.", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -72,7 +78,6 @@ class QuizResultActivity : AppCompatActivity() {
             return
         }
 
-        quizStartTime = System.currentTimeMillis()
         if (timerMinutes > 0) {
             startTimer(timerMinutes)
         } else {
@@ -80,7 +85,6 @@ class QuizResultActivity : AppCompatActivity() {
         }
 
         displayQuestion()
-
 
         nextButton.setOnClickListener {
             loadNextQuestion()
@@ -91,6 +95,38 @@ class QuizResultActivity : AppCompatActivity() {
         super.onDestroy()
         countDownTimer?.cancel()
     }
+
+    // --- 3. NEW: Function to update the score in the Room database ---
+    private fun updateQuizScoreInRoom(finalScore: Int) {
+        // Check if we have a valid ID.
+        if (quizHistoryId == -1L) {
+            Log.e("QuizResultActivity", "Cannot update score: History ID is invalid.")
+            return
+        }
+
+        // Use a coroutine to perform the database operation on a background thread.
+        lifecycleScope.launch {
+            try {
+                quizHistoryDao.updateScore(quizHistoryId, finalScore)
+                Log.d("QuizResultActivity", "Quiz score updated successfully in Room DB!")
+            } catch (e: Exception) {
+                Log.e("QuizResultActivity", "Failed to update score in Room DB", e)
+            }
+        }
+    }
+
+    private fun finishQuiz() {
+        countDownTimer?.cancel()
+
+        // --- 4. CALL THE NEW ROOM UPDATE FUNCTION ---
+        updateQuizScoreInRoom(score)
+
+        Toast.makeText(this, "Quiz finished! Your score: $score/${questions.size}", Toast.LENGTH_LONG).show()
+        finish() // Go back to the main screen
+    }
+
+    // --- All your other functions (initializeViews, displayQuestion, parseQuizData, etc.) remain exactly the same ---
+    // --- No changes are needed in the code below this point. ---
 
     private fun initializeViews() {
         questionNumberTextView = findViewById(R.id.questionNumberTextView)
@@ -131,17 +167,18 @@ class QuizResultActivity : AppCompatActivity() {
             quizProgressBar.progressTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#4CAF50"))
 
             feedbackTextView.isVisible = false
-
             nextButton.isVisible = false
             optionsRadioGroup.clearCheck()
             setOptionsEnabled(true)
             resetOptionColors()
+
             questionNumberTextView.text = "Question ${currentQuestionIndex + 1}/${questions.size}"
             questionTextView.text = question.question
             optionA.text = question.optionA
             optionB.text = question.optionB
             optionC.text = question.optionC
             optionD.text = question.optionD
+
             optionsRadioGroup.setOnCheckedChangeListener { _, checkedId ->
                 if (checkedId != -1) {
                     checkAnswer()
@@ -212,36 +249,6 @@ class QuizResultActivity : AppCompatActivity() {
             displayQuestion()
         } else {
             finishQuiz()
-        }
-    }
-
-    private fun finishQuiz() {
-        countDownTimer?.cancel()
-        timeTakenInMillis = System.currentTimeMillis() - quizStartTime
-
-        val finalScore = "$score/${questions.size}"
-        Toast.makeText(this, "Quiz finished! Your score: $finalScore", Toast.LENGTH_LONG).show()
-
-        saveQuizResult(quizTopic, finalScore, timeTakenInMillis)
-
-        finish()
-    }
-
-    private fun saveQuizResult(topic: String, finalScore: String, timeTaken: Long) {
-        val quizResult = QuizResultEntity(
-            topic = topic,
-            score = finalScore,
-            timestamp = System.currentTimeMillis(),
-        )
-
-        lifecycleScope.launch {
-            try {
-                AppDatabase.getDatabase(applicationContext).quizDao().insertQuizResult(quizResult)
-
-                Log.d("QuizResultActivity", "Quiz result saved successfully.")
-            } catch (e: Exception) {
-                Log.e("QuizResultActivity", "Failed to save quiz result", e)
-            }
         }
     }
 
